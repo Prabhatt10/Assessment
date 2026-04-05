@@ -1,0 +1,51 @@
+export const mockTransactions = [
+  {
+    id: '1',
+    date: '2023-10-01T10:00:00Z',
+    amount: 5000,
+    category: 'Salary',
+    type: 'income',
+  },
+  {
+    id: '2',
+    date: '2023-10-05T14:30:00Z',
+    amount: 150.5,
+    category: 'Groceries',
+    type: 'expense',
+  },
+  {
+    id: '3',
+    date: '2023-10-10T09:15:00Z',
+    amount: 60,
+    category: 'Utilities',
+    type: 'expense',
+  },
+  {
+    id: '4',
+    date: '2023-10-12T18:45:00Z',
+    amount: 120,
+    category: 'Dining',
+    type: 'expense',
+  },
+  {
+    id: '5',
+    date: '2023-10-15T11:20:00Z',
+    amount: 300,
+    category: 'Freelance',
+    type: 'income',
+  },
+  {
+    id: '6',
+    date: '2023-10-20T16:00:00Z',
+    amount: 85,
+    category: 'Entertainment',
+    type: 'expense',
+  },
+  {
+    id: '7',
+    date: '2023-10-25T08:30:00Z',
+    amount: 45,
+    category: 'Transport',
+    type: 'expense',
+  },
+];

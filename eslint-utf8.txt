@@ -1,0 +1,33 @@
+
+C:\Users\hp\Desktop\Assessment\src\pages\Dashboard\BalanceChart.jsx
+  13:9  error  Error: Cannot reassign variable after render completes
+
+Reassigning `currentBalance` after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+  11 |     return sorted.map((t) => {
+  12 |       if (t.type === 'income') {
+> 13 |         currentBalance += t.amount;
+     |         ^^^^^^^^^^^^^^ Cannot reassign `currentBalance` after render completes
+  14 |       } else {
+  15 |         currentBalance -= t.amount;
+  16 |       }  react-hooks/immutability
+
+C:\Users\hp\Desktop\Assessment\src\pages\Transactions\TransactionForm.jsx
+  21:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  19 |   useEffect(() => {
+  20 |     if (initialData) {
+> 21 |       setFormData({
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  22 |         ...initialData,
+  23 |         amount: initialData.amount.toString(),
+  24 |         date: new Date(initialData.date).toISOString().slice(0, 16),  react-hooks/set-state-in-effect
+
+✖ 2 problems (2 errors, 0 warnings)
+
