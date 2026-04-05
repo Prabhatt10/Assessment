@@ -2,14 +2,30 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mockTransactions, mockBudgets } from '../data/mockData';
 
+const ACHIEVEMENTS_LIST = [
+  { id: 'first_transaction', title: 'First Steps', description: 'Log your first transaction', threshold: 1, type: 'transaction_count' },
+  { id: 'saving_master', title: 'Saving Master', description: 'Save a total of $10,000 in balance', threshold: 10000, type: 'balance' },
+  { id: 'consistency_key', title: 'Consistency is Key', description: 'Log 50 transactions', threshold: 50, type: 'transaction_count' },
+  { id: 'budget_champion', title: 'Budget Champion', description: 'Keep all budgets green', threshold: 0, type: 'budget_adherence' },
+];
+
+export const EXCHANGE_RATES = {
+  'USD': { symbol: '$', rate: 1 },
+  'EUR': { symbol: '€', rate: 0.92 },
+  'INR': { symbol: '₹', rate: 83.5 }
+};
+
 export const useFinanceStore = create(
   persist(
     (set, get) => ({
       transactions: mockTransactions,
       budgets: mockBudgets,
+      goals: [],
       notifications: [],
+      achievements: [],
       role: 'Admin', // 'Admin' | 'Viewer'
       theme: 'light', // 'light' | 'dark'
+      currency: 'USD',
       searchQuery: '',
       filters: {
         type: 'all',
@@ -18,18 +34,54 @@ export const useFinanceStore = create(
         amountRange: { min: null, max: null },
         tags: [],
       },
+      savedFilters: [],
+      dashboardLayout: ['summary', 'cashflow', 'balanceTrend', 'spendingByCategory', 'budgetProgress', 'recentTransactions'],
 
-      addTransaction: (transaction) =>
+      setDashboardLayout: (layout) => set({ dashboardLayout: layout }),
+
+      setCurrency: (currency) => set({ currency }),
+
+      checkAchievements: () => {
+        const state = get();
+        const balance = state.transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
+        const transactionCount = state.transactions.length;
+
+        ACHIEVEMENTS_LIST.forEach(achievement => {
+          if (!state.achievements.find(a => a.id === achievement.id)) {
+            let unlocked = false;
+            
+            if (achievement.type === 'transaction_count' && transactionCount >= achievement.threshold) unlocked = true;
+            if (achievement.type === 'balance' && balance >= achievement.threshold) unlocked = true;
+
+            if (unlocked) {
+              const newAchievement = { ...achievement, unlockedAt: new Date().toISOString() };
+              set(s => ({
+                achievements: [...s.achievements, newAchievement],
+                notifications: [
+                  { id: crypto.randomUUID(), type: 'success', message: `Achievement Unlocked: ${achievement.title} 🏆!`, read: false, date: new Date().toISOString() },
+                  ...s.notifications
+                ]
+              }));
+            }
+          }
+        });
+      },
+
+      addTransaction: (transaction) => {
         set((state) => ({
           transactions: [{ ...transaction, id: crypto.randomUUID() }, ...state.transactions],
-        })),
+        }));
+        get().checkAchievements();
+      },
 
-      editTransaction: (updatedTransaction) =>
+      editTransaction: (updatedTransaction) => {
         set((state) => ({
           transactions: state.transactions.map((t) =>
             t.id === updatedTransaction.id ? updatedTransaction : t
           ),
-        })),
+        }));
+        get().checkAchievements();
+      },
 
       deleteTransaction: (id) =>
         set((state) => ({
@@ -49,6 +101,21 @@ export const useFinanceStore = create(
           }
           return { budgets: [...state.budgets, { category, limit }] };
         }),
+
+      addGoal: (goal) => 
+        set((state) => ({
+          goals: [...state.goals, { ...goal, id: crypto.randomUUID(), current: 0 }]
+        })),
+        
+      updateGoalProgress: (id, amount) =>
+        set((state) => ({
+          goals: state.goals.map(g => g.id === id ? { ...g, current: amount } : g)
+        })),
+        
+      deleteGoal: (id) => 
+        set((state) => ({
+          goals: state.goals.filter((g) => g.id !== id),
+        })),
 
       addNotification: (notification) =>
         set((state) => ({
@@ -78,7 +145,27 @@ export const useFinanceStore = create(
       setFilters: (filters) =>
         set((state) => ({ filters: { ...state.filters, ...filters } })),
 
-      importData: (data) => set({ transactions: data }),
+      saveCurrentFilters: (name) => 
+        set((state) => ({
+          savedFilters: [...state.savedFilters, { id: crypto.randomUUID(), name, filterState: state.filters }]
+        })),
+        
+      applySavedFilter: (id) => 
+        set((state) => {
+          const target = state.savedFilters.find(f => f.id === id);
+          if (target) return { filters: target.filterState };
+          return state;
+        }),
+
+      deleteSavedFilter: (id) =>
+        set((state) => ({
+          savedFilters: state.savedFilters.filter((f) => f.id !== id),
+        })),
+
+      importData: (data) => {
+        set({ transactions: data });
+        get().checkAchievements();
+      },
 
       simulateRecurringTransactions: () => {
         const { transactions } = get();
@@ -90,7 +177,6 @@ export const useFinanceStore = create(
           if (t.isRecurring) {
             const tDate = new Date(t.date);
             if (now.getTime() - tDate.getTime() > thirtyDaysInMs) {
-              // Create a duplicated transaction for the current month roughly
               const isAlreadyGenerated = transactions.some(
                 existing => existing.category === t.category && 
                 existing.amount === t.amount && 
@@ -120,11 +206,12 @@ export const useFinanceStore = create(
               date: now.toISOString()
             }, ...state.notifications]
           }));
+          get().checkAchievements();
         }
       }
     }),
     {
-      name: 'finance-dashboard-v2-storage',
+      name: 'finance-dashboard-v3-storage',
     }
   )
 );
